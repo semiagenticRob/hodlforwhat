@@ -1,6 +1,6 @@
 rep_id: rep-015
 title: HodlForWhat — Bitcoin spending planner
-phase: deploy          # scope | design | build | test | deploy | done | killed
+phase: done          # scope | design | build | test | deploy | done | killed
 # gate result values:
 #   pending | approved | approved-with-noted-concerns | revise | aborted
 gates:
@@ -8,12 +8,13 @@ gates:
   design:  { result: approved, at: 2026-05-26T16:15:00Z }
   build:   { result: approved, at: 2026-05-26T16:30:00Z }
   test:    { result: approved, at: 2026-05-26T16:45:00Z }
-  deploy:  { result: pending }
+  deploy:  { result: approved, at: 2026-05-26T16:55:00Z }
 iterations:
   scope:   1
   design:  2
   build:   2
   test:    1
-  deploy:  0
+  deploy:  1
+live_url: https://semiagenticrob.github.io/hodlforwhat/
 created: 2026-05-26T15:45:54Z
-updated: 2026-05-26T16:45:00Z
+updated: 2026-05-26T16:55:00Z

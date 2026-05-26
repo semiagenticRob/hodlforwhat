@@ -1,0 +1,18 @@
+candidates:
+  - target: gh-pages-static
+    confidence: high
+    evidence: "gh-pages devDependency in package.json; 'deploy' script invokes vite build + gh-pages -d dist; vite.config.ts sets base: '/hodlforwhat/'; no server-side code; no Next.js / Vercel / Expo / daemon signals."
+  - target: vercel-next
+    confidence: none
+    evidence: "no next.config.*, no vercel.json, no Next dependency."
+  - target: expo-eas
+    confidence: none
+    evidence: "no app.json with Expo, no eas.json."
+  - target: python-daemon
+    confidence: none
+    evidence: "no Python files."
+selected: gh-pages-static
+fallback: manual-checklist
+scope_hint: static-site
+design_planned_target: gh-pages-static
+conflict: none
