@@ -24,6 +24,24 @@ function $(id: string): HTMLElement {
   return el;
 }
 
+let toastTimer: number | null = null;
+function toast(message: string, durationMs = 2000) {
+  const el = $('toast');
+  el.textContent = message;
+  el.classList.add('toast--visible');
+  if (toastTimer !== null) clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => {
+    el.classList.remove('toast--visible');
+    toastTimer = null;
+  }, durationMs);
+}
+
+function persist(): boolean {
+  const ok = saveState(state);
+  if (!ok) toast('Could not save — check browser storage settings.', 4000);
+  return ok;
+}
+
 function rerender() {
   const targetsEl = $('targets');
   targetsEl.replaceChildren(...renderTargets(state).children);
@@ -55,7 +73,7 @@ async function handleRefresh() {
   try {
     const fetched = await priceFetcher.fetchBtcPrice();
     state = recordPriceFetch(state, fetched);
-    saveState(state);
+    persist();
     rerender();
   } catch (err) {
     if (err instanceof DebouncedError) {
@@ -110,8 +128,9 @@ function handleFormSubmit(event: Event) {
     };
     state = addTarget(state, target);
   }
-  saveState(state);
+  persist();
   form.classList.add('hidden');
+  toast(id ? 'Target updated' : 'Target saved');
   rerender();
 }
 
@@ -126,8 +145,12 @@ function handleTargetClick(event: Event) {
   if (!action || !id) return;
 
   if (action === 'delete') {
+    const target = state.targets.find((t) => t.id === id);
+    const label = target?.goal ? `"${target.goal}"` : 'this target';
+    if (!confirm(`Delete ${label}?`)) return;
     state = deleteTarget(state, id);
-    saveState(state);
+    persist();
+    toast('Target deleted');
     rerender();
   } else if (action === 'edit') {
     const target = state.targets.find((t) => t.id === id);

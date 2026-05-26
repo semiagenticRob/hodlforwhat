@@ -1,19 +1,19 @@
 rep_id: rep-015
 title: HodlForWhat — Bitcoin spending planner
-phase: test          # scope | design | build | test | deploy | done | killed
+phase: deploy          # scope | design | build | test | deploy | done | killed
 # gate result values:
 #   pending | approved | approved-with-noted-concerns | revise | aborted
 gates:
   scope:   { result: approved-with-noted-concerns, at: 2026-05-26T15:55:00Z }
   design:  { result: approved, at: 2026-05-26T16:15:00Z }
   build:   { result: approved, at: 2026-05-26T16:30:00Z }
-  test:    { result: pending }
+  test:    { result: approved, at: 2026-05-26T16:45:00Z }
   deploy:  { result: pending }
 iterations:
   scope:   1
   design:  2
   build:   2
-  test:    0
+  test:    1
   deploy:  0
 created: 2026-05-26T15:45:54Z
-updated: 2026-05-26T16:30:00Z
+updated: 2026-05-26T16:45:00Z

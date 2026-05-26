@@ -31,8 +31,15 @@ export function loadState(): AppState {
   }
 }
 
-export function saveState(state: AppState): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+export function saveState(state: AppState): boolean {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    return true;
+  } catch {
+    // Storage quota exceeded, private/incognito mode disabling storage,
+    // or user disabled site storage. Caller surfaces the failure.
+    return false;
+  }
 }
 
 export function addTarget(state: AppState, target: Target): AppState {

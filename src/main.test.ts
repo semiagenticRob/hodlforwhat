@@ -21,7 +21,12 @@ function setUpDom() {
   const refresh = el('button', { id: 'refresh', class: 'refresh', type: 'button' });
   refresh.textContent = '↻ Refresh';
   const priceBar = el('div', { class: 'price-bar' }, [price, updated, refresh]);
-  const header = el('header', { class: 'app-header' }, [el('h1', {}, [document.createTextNode('HodlForWhat')]), priceBar]);
+  const toastEl = el('div', { id: 'toast', class: 'toast', role: 'status' });
+  const header = el('header', { class: 'app-header' }, [
+    el('h1', {}, [document.createTextNode('HodlForWhat')]),
+    priceBar,
+    toastEl,
+  ]);
 
   const addNew = el('button', { id: 'add-new', type: 'button' });
   addNew.textContent = '+ Add new';
@@ -127,7 +132,8 @@ describe('main', () => {
     expect(persisted.targets[0].goal).toBe('Original');
   });
 
-  it('delete flow removes a target from DOM and LocalStorage', async () => {
+  it('delete flow removes a target from DOM and LocalStorage when confirmed', async () => {
+    vi.stubGlobal('confirm', vi.fn(() => true));
     const { init } = await import('./main');
     init();
     (document.getElementById('add-new') as HTMLButtonElement).click();
@@ -146,6 +152,29 @@ describe('main', () => {
     expect(document.querySelector('.target-card')).toBeNull();
     const persisted = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}');
     expect(persisted.targets.length).toBe(0);
+    vi.unstubAllGlobals();
+  });
+
+  it('delete flow leaves the target intact when cancelled', async () => {
+    vi.stubGlobal('confirm', vi.fn(() => false));
+    const { init } = await import('./main');
+    init();
+    (document.getElementById('add-new') as HTMLButtonElement).click();
+    const form = document.getElementById('target-form') as HTMLFormElement;
+    (form.elements.namedItem('goal') as HTMLInputElement).value = 'Keep me';
+    (form.elements.namedItem('priceUsd') as HTMLInputElement).value = '120000';
+    (form.elements.namedItem('amountBtc') as HTMLInputElement).value = '0.1';
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+    const delBtn = document.querySelector(
+      '.target-card__delete'
+    ) as HTMLButtonElement;
+    delBtn.click();
+
+    expect(document.querySelector('.target-card')).not.toBeNull();
+    const persisted = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}');
+    expect(persisted.targets.length).toBe(1);
+    vi.unstubAllGlobals();
   });
 
   it('refresh click fetches price, displays it, and disables the button', async () => {
