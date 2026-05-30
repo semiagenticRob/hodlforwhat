@@ -131,11 +131,13 @@ button:disabled {
   margin: 0 0 0.5rem;
   color: var(--muted);
   font-size: 0.9rem;
+  padding-right: 4rem;
 }
 
 .target-card__status {
   margin: 0;
   font-weight: 500;
+  padding-right: 4rem;
 }
 
 .target-card--hit .target-card__status {
@@ -211,4 +213,10 @@ button:disabled {
 .toast--visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+@media (max-width: 400px) {
+  .target-form {
+    grid-template-columns: 1fr;
+  }
 }

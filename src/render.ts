@@ -1,8 +1,29 @@
-import type { AppState, Target } from './types';
+import type { AppState, Target, TargetStatus } from './types';
 import { evaluateTarget } from './evaluate';
 
 const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 const btc = new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 });
+
+interface ElAttrs {
+  className?: string;
+  textContent?: string;
+  type?: string;
+  dataset?: Record<string, string>;
+}
+
+function el<K extends keyof HTMLElementTagNameMap>(
+  tag: K,
+  attrs: ElAttrs = {},
+  ...children: HTMLElement[]
+): HTMLElementTagNameMap[K] {
+  const node = document.createElement(tag);
+  if (attrs.className != null) node.className = attrs.className;
+  if (attrs.textContent != null) node.textContent = attrs.textContent;
+  if (attrs.type != null) (node as HTMLButtonElement).type = attrs.type as 'button' | 'submit' | 'reset';
+  if (attrs.dataset) Object.assign(node.dataset, attrs.dataset);
+  for (const child of children) node.appendChild(child);
+  return node;
+}
 
 export function renderHeader(state: AppState, refreshDisabledRemainingMs: number): {
   priceText: string;
@@ -26,69 +47,61 @@ export function renderTargets(state: AppState): HTMLElement {
   container.className = 'targets-list';
 
   if (state.targets.length === 0) {
-    const empty = document.createElement('p');
-    empty.className = 'empty-state';
-    empty.textContent = 'No targets yet. Add one to get started.';
-    container.appendChild(empty);
+    container.appendChild(el('p', { className: 'empty-state', textContent: 'No targets yet. Add one to get started.' }));
     return container;
   }
 
   const currentPrice = state.lastPriceFetch?.priceUsd ?? 0;
-
   for (const target of state.targets) {
     container.appendChild(renderTargetCard(target, currentPrice));
   }
   return container;
 }
 
+function statusText(status: TargetStatus, target: Target, currentPriceUsd: number): string {
+  if (status === 'hit') return 'Status: HIT — ready to act';
+  if (currentPriceUsd > 0) {
+    const gap = target.priceUsd - currentPriceUsd;
+    return `Status: pending (${usd.format(gap)} more to go)`;
+  }
+  return 'Status: pending (refresh BTC price to see how close)';
+}
+
 function renderTargetCard(target: Target, currentPriceUsd: number): HTMLElement {
   const status = evaluateTarget(target, currentPriceUsd);
-  const card = document.createElement('article');
-  card.className = `target-card target-card--${status}`;
-  card.dataset.id = target.id;
 
-  const header = document.createElement('div');
-  header.className = 'target-card__header';
-  const goal = document.createElement('h3');
-  goal.textContent = target.goal;
-  header.appendChild(goal);
+  const header = el(
+    'div',
+    { className: 'target-card__header' },
+    el('h3', { textContent: target.goal }),
+    el('button', { type: 'button', className: 'target-card__edit', textContent: 'edit', dataset: { action: 'edit', id: target.id } }),
+  );
 
-  const editBtn = document.createElement('button');
-  editBtn.type = 'button';
-  editBtn.className = 'target-card__edit';
-  editBtn.dataset.action = 'edit';
-  editBtn.dataset.id = target.id;
-  editBtn.textContent = 'edit';
-  header.appendChild(editBtn);
+  const meta = el('p', {
+    className: 'target-card__meta',
+    textContent: `When BTC ≥ ${usd.format(target.priceUsd)} • sell ${btc.format(target.amountBtc)} BTC`,
+  });
 
-  card.appendChild(header);
+  const statusEl = el('p', {
+    className: 'target-card__status',
+    textContent: statusText(status, target, currentPriceUsd),
+  });
 
-  const meta = document.createElement('p');
-  meta.className = 'target-card__meta';
-  meta.textContent = `When BTC ≥ ${usd.format(target.priceUsd)} • sell ${btc.format(target.amountBtc)} BTC`;
-  card.appendChild(meta);
+  const delBtn = el('button', {
+    type: 'button',
+    className: 'target-card__delete',
+    textContent: 'delete',
+    dataset: { action: 'delete', id: target.id },
+  });
 
-  const statusEl = document.createElement('p');
-  statusEl.className = 'target-card__status';
-  if (status === 'hit') {
-    statusEl.textContent = 'Status: HIT — ready to act';
-  } else if (currentPriceUsd > 0) {
-    const gap = target.priceUsd - currentPriceUsd;
-    statusEl.textContent = `Status: pending (${usd.format(gap)} more to go)`;
-  } else {
-    statusEl.textContent = 'Status: pending (refresh BTC price to see how close)';
-  }
-  card.appendChild(statusEl);
-
-  const delBtn = document.createElement('button');
-  delBtn.type = 'button';
-  delBtn.className = 'target-card__delete';
-  delBtn.dataset.action = 'delete';
-  delBtn.dataset.id = target.id;
-  delBtn.textContent = 'delete';
-  card.appendChild(delBtn);
-
-  return card;
+  return el(
+    'article',
+    { className: `target-card target-card--${status}`, dataset: { id: target.id } },
+    header,
+    meta,
+    statusEl,
+    delBtn,
+  );
 }
 
 function friendlyAge(isoTimestamp: string): string {

@@ -24,6 +24,10 @@ function $(id: string): HTMLElement {
   return el;
 }
 
+function formInput(form: HTMLFormElement, name: string): HTMLInputElement {
+  return form.elements.namedItem(name) as HTMLInputElement;
+}
+
 let toastTimer: number | null = null;
 function toast(message: string, durationMs = 2000) {
   const el = $('toast');
@@ -42,6 +46,20 @@ function persist(): boolean {
   return ok;
 }
 
+function startCountdown(refreshBtn: HTMLButtonElement): void {
+  if (countdownTimer !== null) return;
+  countdownTimer = window.setInterval(() => {
+    const remaining = priceFetcher.remainingDebounceMs();
+    if (remaining <= 0) {
+      clearInterval(countdownTimer!);
+      countdownTimer = null;
+      rerender();
+    } else {
+      refreshBtn.textContent = `Refresh available in ${Math.ceil(remaining / 1000)}s`;
+    }
+  }, 1000);
+}
+
 function rerender() {
   const targetsEl = $('targets');
   targetsEl.replaceChildren(...renderTargets(state).children);
@@ -53,19 +71,8 @@ function rerender() {
   refreshBtn.textContent = header.refreshLabel;
   refreshBtn.disabled = header.refreshDisabled;
 
-  if (header.refreshDisabled && countdownTimer === null) {
-    countdownTimer = window.setInterval(() => {
-      const remaining = priceFetcher.remainingDebounceMs();
-      if (remaining <= 0) {
-        if (countdownTimer !== null) {
-          clearInterval(countdownTimer);
-          countdownTimer = null;
-        }
-        rerender();
-      } else {
-        refreshBtn.textContent = `Refresh available in ${Math.ceil(remaining / 1000)}s`;
-      }
-    }, 1000);
+  if (header.refreshDisabled) {
+    startCountdown(refreshBtn);
   }
 }
 
@@ -80,28 +87,29 @@ async function handleRefresh() {
       rerender();
       return;
     }
-    const refreshBtn = $('refresh') as HTMLButtonElement;
-    refreshBtn.textContent = '↻ Refresh (price fetch failed — try again)';
+    toast('Price fetch failed — try again.', 4000);
+    rerender();
   }
 }
 
 function handleAddNew() {
   const form = $('target-form') as HTMLFormElement;
   form.classList.remove('hidden');
-  (form.elements.namedItem('id') as HTMLInputElement).value = '';
-  (form.elements.namedItem('goal') as HTMLInputElement).value = '';
-  (form.elements.namedItem('priceUsd') as HTMLInputElement).value = '';
-  (form.elements.namedItem('amountBtc') as HTMLInputElement).value = '';
-  (form.elements.namedItem('goal') as HTMLInputElement).focus();
+  const goalEl = formInput(form, 'goal');
+  formInput(form, 'id').value = '';
+  goalEl.value = '';
+  formInput(form, 'priceUsd').value = '';
+  formInput(form, 'amountBtc').value = '';
+  goalEl.focus();
 }
 
 function handleFormSubmit(event: Event) {
   event.preventDefault();
   const form = event.currentTarget as HTMLFormElement;
-  const id = (form.elements.namedItem('id') as HTMLInputElement).value;
-  const goal = (form.elements.namedItem('goal') as HTMLInputElement).value.trim();
-  const priceUsd = parseFloat((form.elements.namedItem('priceUsd') as HTMLInputElement).value);
-  const amountBtc = parseFloat((form.elements.namedItem('amountBtc') as HTMLInputElement).value);
+  const id = formInput(form, 'id').value;
+  const goal = formInput(form, 'goal').value.trim();
+  const priceUsd = parseFloat(formInput(form, 'priceUsd').value);
+  const amountBtc = parseFloat(formInput(form, 'amountBtc').value);
   if (
     !goal ||
     !Number.isFinite(priceUsd) ||
@@ -109,6 +117,7 @@ function handleFormSubmit(event: Event) {
     priceUsd <= 0 ||
     amountBtc <= 0
   ) {
+    toast('Please fill in all fields with valid values.', 3000);
     return;
   }
 
@@ -157,10 +166,10 @@ function handleTargetClick(event: Event) {
     if (!target) return;
     const form = $('target-form') as HTMLFormElement;
     form.classList.remove('hidden');
-    (form.elements.namedItem('id') as HTMLInputElement).value = target.id;
-    (form.elements.namedItem('goal') as HTMLInputElement).value = target.goal;
-    (form.elements.namedItem('priceUsd') as HTMLInputElement).value = String(target.priceUsd);
-    (form.elements.namedItem('amountBtc') as HTMLInputElement).value = String(target.amountBtc);
+    formInput(form, 'id').value = target.id;
+    formInput(form, 'goal').value = target.goal;
+    formInput(form, 'priceUsd').value = String(target.priceUsd);
+    formInput(form, 'amountBtc').value = String(target.amountBtc);
   }
 }
 
